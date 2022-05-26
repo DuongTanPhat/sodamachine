@@ -19,9 +19,8 @@ public class SodaMachineApp {
 
 
     public static void main(String[] args) {
-        SodaMachineComponent sodaMachineShop = DaggerSodaMachineApp_SodaMachineComponent.builder().build();
-        sodaMachineShop.on().receiveMoney(10000);
-
-
+        SodaMachineComponent sodaMachine = DaggerSodaMachineApp_SodaMachineComponent.builder().build();
+        sodaMachine.on().receiveMoney(Money.VND200K.value);
+        sodaMachine.on().sentMoney();
     }
 }

@@ -18,9 +18,9 @@ public class SodaMachineImpl implements  SodaMachine {
     private Inventory<Money> moneyInventory;
     private Inventory<Drink> drinkInventory;
     private Integer clientMoney = 0;
-
+    private Map<Money, Integer> refund = new TreeMap<>();
     @Inject
-    public SodaMachineImpl( Promotion promotion, Inventory<Money> moneyInventory, Inventory<Drink> drinkInventory) {
+    public SodaMachineImpl( Promotion promotion,Inventory<Money> moneyInventory, Inventory<Drink> drinkInventory) {
         this.promotion = promotion;
         this.moneyInventory = moneyInventory;
         this.drinkInventory = drinkInventory;
@@ -51,12 +51,14 @@ public class SodaMachineImpl implements  SodaMachine {
         if (clientMoney >= drink.price) {
             int number = drinkInventory.getQuantity(drink);
             if (number > 0) {
+                if(isCanRefund(clientMoney-drink.price)){
                 clientMoney -= drink.price;
                 drinkInventory.decrease(drink);
-                userDrink.add(drink);
+                userDrink.add(drink);}
+                else throw new NotEnoughMoneyToChangeException("Cant change "+clientMoney+" because not enough money!");
             }
             else throw new SoldOutException(drink.name+ " be sold out!");
-            if (promotion.isFree(drink) && number > 1) {
+            if (number > 1 && promotion.isFree(drink)) {
                 drinkInventory.decrease(drink);
                 userDrink.add(drink);
             }
@@ -66,13 +68,13 @@ public class SodaMachineImpl implements  SodaMachine {
         return userDrink;
     }
 
-    public Map<Money, Integer> calculator(Map<Money, Integer> refund,Money money){
-        if (clientMoney >= money.value) {
-            int count = clientMoney / money.value;
-            clientMoney %= money.value;
+    public int calculator(int clientMoneyAfter,Money money){
+        if (clientMoneyAfter >= money.value) {
+            int count = clientMoneyAfter / money.value;
+            clientMoneyAfter %= money.value;
             int quantity = moneyInventory.getQuantity(money);
             if (count > quantity) {
-                clientMoney += (money.value) * (count - quantity);
+                clientMoneyAfter += (money.value) * (count - quantity);
                 refund.put(money, quantity);
                 moneyInventory.minus(money,quantity);
             } else {
@@ -80,77 +82,29 @@ public class SodaMachineImpl implements  SodaMachine {
                 moneyInventory.minus(money,count);
             }
         }
-        return refund;
+        return clientMoneyAfter;
+    }
+    public boolean isCanRefund(int money){
+        if (money == 0) return true;
+        money = calculator(money,Money.VND200K);
+        money = calculator(money,Money.VND100K);
+        money = calculator(money,Money.VND50K);
+        money = calculator(money,Money.VND20K);
+        money = calculator(money,Money.VND10K);
+        return money == 0;
     }
     @Override
     public Map<Money, Integer> sentMoney() {
-        Map<Money, Integer> refund = new TreeMap();
-        if (clientMoney == 0) return refund;
-        calculator(refund,Money.VND200K);
-        calculator(refund,Money.VND100K);
-        calculator(refund,Money.VND50K);
-        calculator(refund,Money.VND20K);
-        calculator(refund,Money.VND10K);
-//        if (clientMoney >= Money.VND200K.value) {
-//            int count = clientMoney / Money.VND200K.value;
-//            clientMoney %= Money.VND200K.value;
-//            int quantity = moneyInventory.getQuantity(Money.VND200K);
-//            if (count > quantity) {
-//                clientMoney += (Money.VND200K.value) * (count - quantity);
-//                refund.put(Money.VND200K, quantity);
-//                moneyInventory.minus(Money.VND200K,quantity);
-//            } else {
-//                refund.put(Money.VND200K, count);
-//                moneyInventory.minus(Money.VND200K,count);
-//            }
-//        }
-//        if (clientMoney >= Money.VND100K.value) {
-//            int count = clientMoney / Money.VND100K.value;
-//            clientMoney %= Money.VND100K.value;
-//            int quantity = moneyInventory.getQuantity(Money.VND100K);
-//            if (count > quantity) {
-//                clientMoney += (Money.VND100K.value) * (count - quantity);
-//                refund.put(Money.VND100K, quantity);
-//                moneyInventory.minus(Money.VND100K,quantity);
-//            } else {
-//                refund.put(Money.VND100K, count);
-//                moneyInventory.minus(Money.VND100K,quantity);
-//            }
-//        }
-//        if (clientMoney >= Money.VND50K.value) {
-//            int count = clientMoney / Money.VND50K.value;
-//            clientMoney %= Money.VND50K.value;
-//            if (count > moneyInventory.getQuantity(Money.VND50K)) {
-//                clientMoney += (Money.VND50K.value) * (count - moneyInventory.getQuantity(Money.VND50K));
-//                refund.put(Money.VND50K, moneyInventory.getQuantity(Money.VND50K));
-//            } else {
-//                refund.put(Money.VND50K, count);
-//            }
-//        }
-//        if (clientMoney >= Money.VND20K.value) {
-//            int count = clientMoney / Money.VND20K.value;
-//            clientMoney %= Money.VND20K.value;
-//            if (count > moneyInventory.getQuantity(Money.VND20K)) {
-//                clientMoney += (Money.VND200K.value) * (count - moneyInventory.getQuantity(Money.VND20K));
-//                refund.put(Money.VND200K, moneyInventory.getQuantity(Money.VND20K));
-//            } else {
-//                refund.put(Money.VND20K, count);
-//            }
-//        }
-//        if (clientMoney >= Money.VND10K.value) {
-//            int count = clientMoney / Money.VND10K.value;
-//            clientMoney %= Money.VND10K.value;
-//            if (count > moneyInventory.getQuantity(Money.VND10K)) {
-//                clientMoney += (Money.VND10K.value) * (count - moneyInventory.getQuantity(Money.VND10K));
-//                refund.put(Money.VND10K, moneyInventory.getQuantity(Money.VND10K));
-//            } else {
-//                refund.put(Money.VND10K, count);
-//            }
-//        }
-        if (clientMoney != 0) {
-
-            System.out.println("Het tien");
-            throw new NotEnoughMoneyToChangeException("Cant change "+clientMoney+" because not enough money!");
+        if (refund.isEmpty()&&clientMoney!=0) {
+            clientMoney = calculator(clientMoney,Money.VND200K);
+            clientMoney = calculator(clientMoney,Money.VND100K);
+            clientMoney = calculator(clientMoney,Money.VND50K);
+            clientMoney = calculator(clientMoney,Money.VND20K);
+            clientMoney = calculator(clientMoney,Money.VND10K);
+            if (clientMoney != 0) {
+                System.out.println("Het tien");
+                throw new NotEnoughMoneyToChangeException("Cant change "+clientMoney+" because not enough money!");
+            }
         }
         clientMoney = 0;
         return refund;

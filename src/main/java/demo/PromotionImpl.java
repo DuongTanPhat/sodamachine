@@ -7,10 +7,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class PromotionImpl implements Promotion{
-    private static int PromotionBudget=50000;
+    private int PromotionBudget=50000;
     private static double rate = 0.1;
     private static List<String> drinkList ;
-    private static LocalDate day;
+    private LocalDate day;
 
     @Inject
     public PromotionImpl() {
